@@ -1,0 +1,140 @@
+body {
+    background-color: #121212;
+    color: #ffffff;
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+/* Sidebar styling */
+.css-1d391kg {
+    padding-top: 2rem;
+    background-color: #1e1e1e;
+    color: #ffffff;
+}
+
+/* Main container */
+.main {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    background-color: #1e1e1e;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Search box container */
+.search-box {
+    position: relative;
+    margin: 2rem auto;
+    width: fit-content;
+}
+
+/* Input field styling */
+.search-box input {
+    padding: 10px;
+    width: 80px;
+    height: 80px;
+    background: none;
+    border: 4px solid #ffd52d;
+    border-radius: 50px;
+    box-sizing: border-box;
+    font-family: 'Comic Sans MS', cursive;
+    font-size: 26px;
+    color: #ffd52d;
+    outline: none;
+    transition: width 0.5s, background 0.5s, border-radius 0.5s;
+}
+
+/* Expand input field on hover */
+.search-box:hover input {
+    width: 350px;
+    background: #3b3640;
+    border-radius: 10px;
+}
+
+/* Icon inside the input field */
+.search-box i {
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    transform: translate(-50%, -50%);
+    font-size: 26px;
+    color: #ffd52d;
+    transition: opacity 0.2s, z-index 0.2s;
+}
+
+/* Hide icon on hover */
+.search-box:hover i {
+    opacity: 0;
+    z-index: -1;
+}
+
+/* Results grid */
+.image-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    padding: 20px 0;
+    justify-content: center;
+}
+
+/* Image card */
+.image-card {
+    background: #2d2d2d;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+}
+
+.image-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.3);
+}
+
+.image-card img {
+    width: 100%;
+    height: auto;
+    display: block;
+    transition: opacity 0.3s ease;
+}
+
+.image-card:hover img {
+    opacity: 0.8;
+}
+
+.image-caption {
+    padding: 12px;
+    font-size: 14px;
+    color: #ffffff;
+    background: #1e1e1e;
+    text-align: center;
+}
+
+/* History tag styling */
+.history-tag {
+    display: inline-block;
+    padding: 6px 12px;
+    margin: 4px;
+    background: #2d2d2d;
+    border-radius: 16px;
+    font-size: 14px;
+    color: #ffffff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.history-tag:hover {
+    background: #4CAF50;
+    color: white;
+}
+
+/* Centering results */
+.results-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    margin-top: 2rem;}

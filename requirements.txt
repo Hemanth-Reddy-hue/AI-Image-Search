@@ -1,0 +1,31 @@
+# Web Framework & Server
+fastapi
+uvicorn
+
+# API Requests
+requests
+
+# UI Framework
+streamlit
+
+# Image Processing
+pillow
+
+# Numerical Computation & Machine Learning
+numpy
+torch
+torchvision
+faiss-cpu
+pandas
+
+# Google Gemini API
+google-generativeai
+
+# Web Scraping
+beautifulsoup4
+lxml
+tqdm
+
+# Data Validation & Environment Variables
+pydantic
+python-dotenv
