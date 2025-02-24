@@ -78,7 +78,8 @@ st.markdown("<h1 style='text-align: center;'>🔍 AI Image Search</h1>", unsafe_
 st.markdown("---")
 
 # Search Box
-query = st.text_input("", placeholder="Search for images...", key="search-box")
+query = st.text_input("Search", placeholder="Search for images...", key="search-box", label_visibility="collapsed")
+
 
 # Perform Search on Enter
 if query:

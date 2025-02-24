@@ -2,25 +2,38 @@ import json
 import pickle
 import numpy as np
 import google.generativeai as genai
+import os
+
+API_KEY ="AIzaSyCwaqFch1pnOFIBKJ5rHZS7596jgRlbGeg"
+if not API_KEY:
+    raise ValueError("❌ Google Gemini API key is missing. Set GEMINI_API_KEY as an environment variable.")
 
 # Configure Google Gemini API
-API_KEY = "AIzaSyCwaqFch1pnOFIBKJ5rHZS7596jgRlbGeg"
 genai.configure(api_key=API_KEY)
 
 # Model Name
 EMBEDDING_MODEL = "models/embedding-001"
 
-# File Paths
-CAPTION_FILE = "src/search/image_captions.json"
-EMBEDDINGS_FILE = "src/search/image_caption_embeddings.pkl"
+# Get script directory
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# File Paths (Relative to script)
+CAPTION_FILE = os.path.join(BASE_DIR, "image_captions.json")
+EMBEDDINGS_FILE = os.path.join(BASE_DIR, "image_caption_embeddings.pkl")
 
 # Load captions
-with open(CAPTION_FILE, "r") as f:
-    image_captions = json.load(f)
+try:
+    with open(CAPTION_FILE, "r") as f:
+        image_captions = json.load(f)
+except FileNotFoundError:
+    raise FileNotFoundError(f"❌ Caption file not found: {CAPTION_FILE}")
 
 # Load embeddings
-with open(EMBEDDINGS_FILE, "rb") as f:
-    image_data = pickle.load(f)
+try:
+    with open(EMBEDDINGS_FILE, "rb") as f:
+        image_data = pickle.load(f)
+except FileNotFoundError:
+    raise FileNotFoundError(f"❌ Embeddings file not found: {EMBEDDINGS_FILE}")
 
 # Extract embeddings and paths
 embeddings = np.array([item["embedding"] for item in image_data]).astype("float32")
@@ -38,7 +51,7 @@ def generate_embedding(text):
             return np.array(response["embedding"]).astype("float32")
     except Exception as e:
         print(f"❌ Embedding generation failed: {e}")
-        return None
+    return None
 
 def search_images(query, top_k=10):
     """Finds the top-K matching images for a query and formats paths correctly."""
@@ -48,17 +61,18 @@ def search_images(query, top_k=10):
 
     # Reshape for search
     query_embedding = query_embedding.reshape(1, -1)
-    dot_products = np.dot(np.stack([item["embedding"] for item in image_data]), query_embedding.T)
-    indices = np.argsort(dot_products, axis=0)[-top_k:][::-1]  # Get top-k indices
+    dot_products = np.dot(embeddings, query_embedding.T).flatten()  # Correct shape for similarity
+
+    # Get top-k indices
+    indices = np.argsort(dot_products)[-top_k:][::-1]
 
     results = []
-    for idx in indices.flatten():
+    for idx in indices:
         original_path = image_paths[idx]
         
-        # Convert the path to match the correct format
-        formatted_path = original_path.split("Intern_Project")[-1]  # Remove everything before "Intern_Project"
-        formatted_path = f"C:\\Users\\reddy\\OneDrive\\Desktop\\Intern_Project{formatted_path.replace('/', '\\')}"  # Convert to Windows format
-        
+        # Convert to OS-compatible path
+        formatted_path = os.path.normpath(os.path.join(os.getcwd(), original_path.lstrip("/")))
+
         caption = image_captions.get(original_path, "No caption available")
         results.append({"path": formatted_path, "caption": caption, "score": float(dot_products[idx])})
 
