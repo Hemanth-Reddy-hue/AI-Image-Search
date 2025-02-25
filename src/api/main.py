@@ -26,6 +26,11 @@ search_history = []
 class SearchQuery(BaseModel):
     query: str
 
+@app.get("/")
+def home():
+    """Root endpoint to check if API is running."""
+    return {"message": "FastAPI is running on Render!"}
+
 @app.post("/search")
 def search(query: SearchQuery):
     """Search for images based on the query using Gemini embeddings."""
@@ -44,4 +49,11 @@ def search(query: SearchQuery):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 10000)))  # Dynamic port support
+    port = int(os.getenv("PORT", 10000))  # Render provides the port dynamically
+    print(f"🚀 FastAPI is starting on port {port}...")
+
+    # Debug: Print available routes
+    routes = [route.path for route in app.router.routes]
+    print("Available Routes:", routes)
+
+    uvicorn.run(app, host="0.0.0.0", port=port)
