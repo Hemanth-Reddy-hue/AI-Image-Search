@@ -1,8 +1,8 @@
 import streamlit as st
 import requests
 
-# FastAPI Backend URL
-API_URL = "http://127.0.0.1:8000/search"
+# ✅ Use Render FastAPI URL (Fix)
+API_URL = "https://ai-image-search-26rn.onrender.com/search"
 
 # Set Dark Theme in Streamlit
 st.set_page_config(
