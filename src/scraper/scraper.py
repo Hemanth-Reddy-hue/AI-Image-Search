@@ -3,7 +3,7 @@ import requests
 from utils import save_image  # Import helper function for downloading images
 
 API_KEY = "48997683-2debef01ab2a554c0d4dfb8a9"
-QUERIES = ["nature", "technology", "animals"]  # Categories to scrape
+QUERIES = ["super heroes"]  
 PER_PAGE = 50  # Number of images per page
 TOTAL_PAGES = 4  # Total number of pages
 BASE_DIR = "../../data/"  # Storage directory
@@ -25,6 +25,7 @@ for query in QUERIES:
             for img in images:
                 img_url = img["largeImageURL"]
                 filename = f"{query}_{image_counter}.jpg"  # Serial naming
+                print(f"saving to {os.path.join(save_dir, filename)}")
                 save_image(img_url, os.path.join(save_dir, filename))
                 image_counter += 1  # Increment counter
         else:
