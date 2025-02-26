@@ -3,7 +3,7 @@ import requests
 from utils import save_image  # Import helper function for downloading images
 
 API_KEY = "48997683-2debef01ab2a554c0d4dfb8a9"
-QUERIES = ["super heroes"]  
+QUERIES = ["Guns","Anime","wars"]  
 PER_PAGE = 50  # Number of images per page
 TOTAL_PAGES = 4  # Total number of pages
 BASE_DIR = "../../data/"  # Storage directory
