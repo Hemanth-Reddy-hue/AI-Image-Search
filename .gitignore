@@ -1,1 +1,3 @@
-
+src/embeddings/api.env  
+src/search/api.env 
+src/search/api_key.env
