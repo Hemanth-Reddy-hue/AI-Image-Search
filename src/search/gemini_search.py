@@ -1,98 +1,127 @@
-import json
+import os
+import time
 import pickle
 import numpy as np
 import google.generativeai as genai
-import requests
 
-# Configure Google Gemini API
-API_KEY = "AIzaSyCwaqFch1pnOFIBKJ5rHZS7596jgRlbGeg"
-genai.configure(api_key=API_KEY)
+# =========================
+# Configure Gemini API
+# =========================
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    raise EnvironmentError("❌ GEMINI_API_KEY not found in environment variables")
 
-# GitHub Repository Base URL
-GITHUB_BASE_URL = "https://github.com/Hemanth-Reddy-hue/AI-Image-Search/blob/main/data/"
-CAPTION_FILE_URL = "https://raw.githubusercontent.com/Hemanth-Reddy-hue/AI-Image-Search/main/src/search/image_captions.json"
-EMBEDDINGS_FILE_URL = "https://raw.githubusercontent.com/Hemanth-Reddy-hue/AI-Image-Search/main/src/search/image_caption_embeddings.pkl"
+genai.configure(api_key=GEMINI_API_KEY)
 
-def fetch_json_from_github(url):
-    """Fetch JSON data from a GitHub raw URL."""
-    response = requests.get(url)
-    if response.status_code == 200:
+MODEL_NAME = "models/embedding-001"  # kept as-is
+BASE_DIR = "../../data/"
+OUTPUT_FILE = "embeddings.pkl"
+
+# =========================
+# Caption generator
+# =========================
+def generate_caption(image_path):
+    filename = os.path.basename(image_path).replace("_", " ").split(".")[0]
+    return f"This is an image of {filename}."
+
+# =========================
+# Embedding generator
+# =========================
+def generate_embedding(text, title="Image Description", retries=3):
+    for attempt in range(retries):
         try:
-            return response.json()
-        except json.JSONDecodeError:
-            print(f"❌ JSON decoding failed: {url}")
-            return {}
-    else:
-        print(f"❌ Failed to fetch JSON from {url} (Status Code: {response.status_code})")
-        return {}
-
-def fetch_pickle_from_github(url):
-    """Fetch and load a pickle file from a GitHub raw URL."""
-    response = requests.get(url)
-    if response.status_code == 200:
-        try:
-            return pickle.loads(response.content)
+            response = genai.embed_content(
+                model=MODEL_NAME,
+                content=text,
+                task_type="retrieval_document",
+                title=title
+            )
+            if response and "embedding" in response:
+                return np.array(response["embedding"], dtype="float32")
         except Exception as e:
-            print(f"❌ Failed to load pickle file from {url}: {e}")
-            return []
-    else:
-        print(f"❌ Failed to fetch pickle file from {url} (Status Code: {response.status_code})")
+            print(f"Attempt {attempt + 1} failed: {e}")
+            time.sleep(2)
+    return None
+
+# =========================
+# Process images
+# =========================
+def process_images(directory):
+    image_embeddings = []
+
+    for root, _, files in os.walk(directory):
+        for filename in files:
+            if filename.lower().endswith((".jpg", ".png")):
+                image_path = os.path.join(root, filename)
+                caption = generate_caption(image_path)
+                embedding = generate_embedding(caption)
+
+                if embedding is not None:
+                    image_embeddings.append({
+                        "path": image_path,
+                        "embedding": embedding
+                    })
+                    print(f"✅ Processed: {image_path}")
+                else:
+                    print(f"❌ Failed: {image_path}")
+
+    return image_embeddings
+
+# =========================
+# Cosine similarity
+# =========================
+def cosine_similarity(a, b):
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+# =========================
+# Threshold-based search
+# =========================
+def search_images(query, threshold=0.75):
+    if not os.path.exists(OUTPUT_FILE):
+        print("❌ embeddings.pkl not found")
         return []
 
-# Load captions and embeddings from GitHub
-image_captions = fetch_json_from_github(CAPTION_FILE_URL)
-image_data = fetch_pickle_from_github(EMBEDDINGS_FILE_URL)
+    with open(OUTPUT_FILE, "rb") as f:
+        data = pickle.load(f)
 
-# Extract embeddings and paths
-embeddings = np.array([item["embedding"] for item in image_data]).astype("float32") if image_data else np.array([])
-image_paths = [item["path"] for item in image_data] if image_data else []
-
-def generate_embedding(text):
-    """Generates an embedding for a text query using the Gemini API."""
-    try:
-        response = genai.embed_content(
-            model="text-embedding-004",
-            content=text
-        )
-        return np.array(response["embedding"], dtype="float32")
-    except Exception as e:
-        print(f"❌ Embedding generation failed: {e}")
-        return None
-
-def format_github_url(original_path):
-    """Converts local image paths to GitHub blob URLs for frontend display."""
-    relative_path = original_path.split("data/")[-1]  # Extract after "data/"
-    return f"{GITHUB_BASE_URL}{relative_path}".replace("\\", "/")  # Ensure correct format
-
-def search_images(query, top_k=10):
-    """Finds the top-K matching images for a query and returns GitHub URLs."""
     query_embedding = generate_embedding(query)
-    if query_embedding is None or embeddings.size == 0:
+    if query_embedding is None:
         return []
-
-    # Compute similarity
-    query_embedding = query_embedding.reshape(1, -1)
-    dot_products = np.dot(embeddings, query_embedding.T)
-    indices = np.argsort(dot_products, axis=0)[-top_k:][::-1]  # Get top-k indices
 
     results = []
-    for idx in indices.flatten():
-        original_path = image_paths[idx]
-        github_url = format_github_url(original_path)
-        caption = image_captions.get(original_path, "No caption available")
+    for item in data:
+        score = cosine_similarity(query_embedding, item["embedding"])
+        if score >= threshold:
+            results.append({
+                "path": item["path"],
+                "score": float(score)
+            })
 
-        results.append({"path": github_url, "caption": caption, "score": float(dot_products[idx])})
-
+    # Sort by similarity descending
+    results.sort(key=lambda x: x["score"], reverse=True)
     return results
 
-# Example Usage
+# =========================
+# Main
+# =========================
 if __name__ == "__main__":
+
+    # Step 1: Build embeddings (run once)
+    if not os.path.exists(OUTPUT_FILE):
+        embeddings = process_images(BASE_DIR)
+        with open(OUTPUT_FILE, "wb") as f:
+            pickle.dump(embeddings, f)
+        print(f"\n✅ Embeddings saved to {OUTPUT_FILE}")
+
+    # Step 2: Search
     query = input("\n🔍 Enter search query: ")
-    results = search_images(query)
+    threshold = float(input("🎯 Enter similarity threshold (e.g. 0.75): "))
+
+    results = search_images(query, threshold)
 
     if results:
-        print("\n🎯 Top 10 Results:")
-        for res in results:
-            print(f"📌 {res['path']} - {res['caption']} (Score: {res['score']:.2f})")
+        print("\n🖼 Matching Images:")
+        for r in results:
+            print(f"{r['path']} → similarity: {r['score']:.3f}")
     else:
-        print("❌ No matching images found.")
+        print("❌ No images matched the threshold.")
