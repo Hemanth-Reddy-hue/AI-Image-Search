@@ -51,12 +51,10 @@ def generate_embedding(text):
     """Generates an embedding for a text query using the Gemini API."""
     try:
         response = genai.embed_content(
-            model="models/embedding-001",
-            content=text,
-            task_type="retrieval_query"
+            model="text-embedding-004",
+            content=text
         )
-        if response and "embedding" in response:
-            return np.array(response["embedding"]).astype("float32")
+        return np.array(response["embedding"], dtype="float32")
     except Exception as e:
         print(f"❌ Embedding generation failed: {e}")
         return None
